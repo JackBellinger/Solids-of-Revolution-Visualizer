@@ -1,76 +1,101 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System;
 
 public class line_draw_brush: MonoBehaviour
 {
-    //Keeps track of a list of points that the attached object has been at every frame / every x frames
-    //will use this to generate the list of points to input to the draw function for a user drawn line / function to rotate
-    public static List<Vector3> drawn_points = new List<Vector3>();
-    private Vector3 OldPos = new Vector3.Zero();
+  //Keeps track of a list of points that the attached object has been at every frame / every x frames
+  //will use this to generate the list of points to input to the draw function for a user drawn line / function to rotate
+  public List<Vector3> drawn_points = new List<Vector3>();
+  private Vector3 OldPos = Vector3.zero;
+  public GameObject canvasPrefab;
+  public GameObject canvas;
+  public bool line_done = false;
+  public float speed = 1.0f;
+  public float canvas_bounds = 5f;
+  // Start is called before the first frame update
+  void Start()
+  {
+    canvas = Instantiate(canvasPrefab, new Vector3(0, 0, 5), Quaternion.Euler(-90, 0, 0));
+    //rotate_towards(plane);
+    drawn_points.Clear();
 
-    public GameObject plane;
+  }
 
-    // Start is called before the first frame update
-    void Start()
+  // Update is called once per frame
+  void Update()
+  {
+    string str = "";
+    Vector3 brush_pos = gameObject.transform.position;
+    brush_pos.z = 5;
+    if(brush_pos.x <= -1*canvas_bounds)
+      brush_pos.x = -1*canvas_bounds;
+    if(brush_pos.x >= canvas_bounds)
+      brush_pos.x = canvas_bounds;
+
+    if(brush_pos.y <= -1*canvas_bounds)
+      brush_pos.y = -1*canvas_bounds;
+    if(brush_pos.y >= canvas_bounds)
+      brush_pos.y = canvas_bounds;
+    gameObject.transform.position = brush_pos;
+
+    if(!line_done)
     {
-      OrthogonalInstantiate.make_prefab();
-        drawn_points.Clear();
+      //if the brush has moved add the new position to the list
+      if(Vector3.Distance(gameObject.transform.position, OldPos) > .001)
+      {
+        Vector3 point =gameObject.transform.position;
+        point.z = 5;
+        str += point;
+        // Debug.Log("drawn points[" + drawn_points.Count + "]: " + str);
+        drawn_points.Add(point);
+      }
+      if(drawn_points.Count == 1000 || Input.GetKeyDown("b"))
+      {
+        line_done = true;
+        Destroy(canvas);
+        //File2list.points = drawn_points;
 
+      }
+
+      OldPos = gameObject.transform.position;
+
+      // for(int i = 0; i < drawn_points.Count; i++)
+      // {
+      //   Vector3 point = drawn_points[i];
+      //   point.z = 0;
+      //   str += point;
+      //   drawn_points[i] = point;
+      // }
+
+
+    }else{
+      // Debug.Log("Finished drawn points[" + drawn_points.Count + "]: " + str);
+      //Destroy(canvas);
+            //List<Vector3> rotated = MeshTestFive.do_Rotation(drawn_points);
     }
+  }
 
-    // Update is called once per frame
-    void Update()
-    {
+  public void rotate_towards(GameObject target)
+  {
+    Camera maincam = GameObject.Find("Main Camera").GetComponent<Camera>();
+    Vector3 relativePos = target.transform.position - maincam.transform.position;
+    //Quaternion rotation = Quaternion.LookRotation(relativePos);
+    target.transform.Rotate(relativePos.x, relativePos.y, relativePos.z, Space.World);
+    // Debug.Log("Relative pos: " + relativePos);
+  }
 
-        //if the brush has moved add the new position to the list
-        if(Vector3.Distance(gameObject.transform.position, OldPos) > .25)
-          drawn_points.Add(gameObject.transform.position;
+  public void move(string dir)
+  {
+    if(dir== "up")
+      transform.Translate(new Vector3(0, 1f * speed * Time.deltaTime, 0));
+    if(dir== "down")
+      transform.Translate(new Vector3(0, -1f * speed * Time.deltaTime, 0));
+    if(dir== "right")
+      transform.Translate(new Vector3(1f * speed * Time.deltaTime, 0, 0));
+    if(dir== "left")
+      transform.Translate(new Vector3(-1f * speed * Time.deltaTime, 0, 0));
+  }
 
-        //if the brush moves away from the canvas, move it to the canvas
-        plane.SetNormalAndPosition(this.transform.forward, this.transform.position);
-        Debug.Log(plane.GetDistanceToPoint(someExternalTransform.position));
-        Vecor3 OldPos = gameObject.transform.position;
-        string str = "";
-        foreach (Vector3 point in drawn_points)
-            str += point;
-        Debug.Log(str);
-    }
 }
-
-public class OrthogonalInstantiate : MonoBehaviour
- {
-     [SerializeField]
-     private static float       m_minDistance;
-     [SerializeField]
-     private static float       m_maxDistance;
-     [SerializeField]
-     private static Plane  m_plane;
-     private static float       m_distance;
-     private static Vector3     m_position;
-     private static bool is_instantiated = false;
-
-     public static void make_prefab()
-     {
-         if(!is_instantiated)// && Input.GetMouseButtonDown(0))
-         {
-           GameObject go               = (GameObject)GameObject.Instantiate(m_plane);
-         }else{
-             if(m_position == null) m_position = new Vector3();
-
-             m_distance = Random.Range(m_minDistance, m_maxDistance);
-
-             //Left
-             if (Random.Range(0, 2) == 0)
-                 m_position.Set(-m_distance, 0f, m_distance);
-             //Right
-             else
-                 m_position.Set(m_distance, 0f, m_distance);
-
-             //Set position of new object
-             GameObject go               = (GameObject)GameObject.Instantiate(m_plane);
-             go.transform.position       = transform.position + transform.TransformVector(m_position);
-             is_instantiated = true;
-         }
-     }
- }
